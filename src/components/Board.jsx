@@ -34,7 +34,6 @@ export function Board({
                 !clearing && !threaten && previewState === 'ok'
                   ? 'preview-ok'
                   : '',
-                !clearing && previewState === 'bad' ? 'preview-bad' : '',
               ]
                 .filter(Boolean)
                 .join(' ')}
@@ -44,9 +43,7 @@ export function Board({
                       '--block': blockColor,
                       '--clear-delay': `${(r * 8 + c) * 12}ms`,
                     }
-                  : previewState === 'bad'
-                    ? { '--block': previewColor }
-                    : undefined
+                  : undefined
               }
             />
           )
@@ -61,22 +58,18 @@ export function buildPreview(board, shape, hoverCell) {
   if (!shape || !hoverCell) return map
 
   const { row, col } = hoverCell
-  let valid = true
   const cells = []
 
   for (const [dr, dc] of shape.cells) {
     const r = row + dr
     const c = col + dc
-    if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) {
-      valid = false
-      continue
-    }
-    if (board[r][c] !== null) valid = false
+    if (r < 0 || r >= BOARD_SIZE || c < 0 || c >= BOARD_SIZE) return map
+    if (board[r][c] !== null) return map
     cells.push([r, c])
   }
 
   for (const [r, c] of cells) {
-    map.set(`${r}-${c}`, valid ? 'ok' : 'bad')
+    map.set(`${r}-${c}`, 'ok')
   }
   return map
 }
@@ -128,21 +121,32 @@ export function ShapePreview({ shape, dragging, used, disabled, onPick }) {
   )
 }
 
+/** How high the piece floats above the pointer. Touch needs more lift. */
+export function getGhostLift(cell, isTouch) {
+  if (isTouch) return Math.max(cell * 3.4, 120)
+  return cell * 0.45
+}
+
 /** Floating piece that follows the pointer at real board cell size. */
-export function DragGhost({ shape, x, y, cell, gap, valid }) {
+export function DragGhost({ shape, x, y, cell, gap, valid, isTouch }) {
   const { rows, cols } = shapeSize(shape.cells)
   const occupied = new Set(shape.cells.map(([r, c]) => `${r}-${c}`))
   const width = cols * cell + (cols - 1) * gap
   const height = rows * cell + (rows - 1) * gap
+  const lift = getGhostLift(cell, isTouch)
 
   return (
     <div
-      className={['drag-ghost', valid === false ? 'invalid' : '']
+      className={[
+        'drag-ghost',
+        isTouch ? 'touch' : '',
+        valid === false ? 'invalid' : '',
+      ]
         .filter(Boolean)
         .join(' ')}
       style={{
         left: x - width / 2,
-        top: y - height - cell * 0.35,
+        top: y - height - lift,
         width,
         height,
         gridTemplateColumns: `repeat(${cols}, ${cell}px)`,
@@ -170,16 +174,24 @@ export function DragGhost({ shape, x, y, cell, gap, valid }) {
  * Map pointer position of the floating ghost to a board top-left cell.
  * Ghost is centered horizontally on the pointer and sits above it.
  */
-export function cellFromPointer(boardEl, metrics, shape, clientX, clientY) {
+export function cellFromPointer(
+  boardEl,
+  metrics,
+  shape,
+  clientX,
+  clientY,
+  isTouch = false,
+) {
   if (!boardEl) return null
 
   const { cell, gap, pad } = metrics
   const { rows, cols } = shapeSize(shape.cells)
   const width = cols * cell + (cols - 1) * gap
   const height = rows * cell + (rows - 1) * gap
+  const lift = getGhostLift(cell, isTouch)
 
   const ghostLeft = clientX - width / 2
-  const ghostTop = clientY - height - cell * 0.35
+  const ghostTop = clientY - height - lift
 
   const rect = boardEl.getBoundingClientRect()
   const gridLeft = rect.left + pad

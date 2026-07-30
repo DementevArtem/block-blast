@@ -6,6 +6,16 @@
   position: relative;
 }
 
+@media (max-width: 480px) {
+  .game {
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100dvh - 26px);
+    gap: 10px;
+    justify-content: flex-start;
+  }
+}
+
 .hud {
   display: flex;
   justify-content: space-between;
@@ -45,7 +55,8 @@
   backdrop-filter: blur(6px);
 }
 
-.score-box.pulse {
+.score-box.pulse .value {
+  display: inline-block;
   animation: score-bump 0.28s ease;
 }
 
@@ -55,7 +66,7 @@
     transform: scale(1);
   }
   40% {
-    transform: scale(1.04);
+    transform: scale(1.06);
   }
 }
 
@@ -246,12 +257,6 @@
   outline-offset: -2px;
 }
 
-.cell.preview-bad {
-  background: var(--bad);
-  outline: 2px solid #ef4444;
-  outline-offset: -2px;
-}
-
 .cell:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
@@ -343,10 +348,16 @@
   filter: drop-shadow(0 10px 18px rgba(26, 35, 50, 0.35));
   opacity: 0.95;
   transition: opacity 0.1s ease;
+  transform-origin: center bottom;
+}
+
+.drag-ghost.touch {
+  filter: drop-shadow(0 16px 28px rgba(26, 35, 50, 0.4));
+  animation: ghost-lift 0.18s ease-out;
 }
 
 .drag-ghost.invalid {
-  opacity: 0.55;
+  opacity: 0.45;
 }
 
 .ghost-cell {
@@ -530,18 +541,73 @@
   }
 }
 
+@keyframes ghost-lift {
+  from {
+    opacity: 0.55;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 0.95;
+    transform: scale(1);
+  }
+}
+
 @media (max-width: 420px) {
   .hud {
-    flex-direction: column;
-    align-items: stretch;
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 10px;
+  }
+
+  .brand h1 {
+    font-size: 1.65rem;
+  }
+
+  .brand p {
+    display: none;
   }
 
   .scores {
-    justify-content: stretch;
+    justify-content: flex-end;
+    flex-shrink: 0;
   }
 
   .score-box {
-    flex: 1;
-    text-align: center;
+    flex: 0 0 auto;
+    min-width: 64px;
+    padding: 6px 10px;
+    text-align: right;
+  }
+
+  .score-box .value {
+    font-size: 1.15rem;
+  }
+
+  .board-wrap {
+    flex: 0 0 auto;
+  }
+
+  .tray {
+    min-height: 96px;
+    gap: 8px;
+  }
+
+  .shape-slot {
+    min-height: 96px;
+    padding: 10px 6px;
+  }
+
+  .shape-grid {
+    --preview-cell: 18px;
+  }
+
+  .actions {
+    margin-top: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0);
+  }
+
+  .btn {
+    padding: 9px 16px;
+    font-size: 0.95rem;
   }
 }

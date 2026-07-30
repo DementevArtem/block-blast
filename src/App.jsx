@@ -207,14 +207,22 @@ export default function App() {
     if (busyRef.current || state.gameOver || !state.shapes[index]) return
     e.preventDefault()
     playPickup()
-    setDrag({ index, x: e.clientX, y: e.clientY })
+    setDrag({
+      index,
+      x: e.clientX,
+      y: e.clientY,
+      isTouch: e.pointerType === 'touch',
+    })
   }
 
   useEffect(() => {
     if (!drag) return
 
     const onMove = (e) => {
-      setDrag((d) => (d ? { ...d, x: e.clientX, y: e.clientY } : null))
+      e.preventDefault()
+      setDrag((d) =>
+        d ? { ...d, x: e.clientX, y: e.clientY } : null,
+      )
     }
 
     const onUp = (e) => {
@@ -229,6 +237,7 @@ export default function App() {
           shape,
           e.clientX,
           e.clientY,
+          current.isTouch,
         )
         if (cell) tryPlace(current.index, cell.row, cell.col)
       }
@@ -239,23 +248,32 @@ export default function App() {
       if (e.key === 'Escape') setDrag(null)
     }
 
-    window.addEventListener('pointermove', onMove)
+    window.addEventListener('pointermove', onMove, { passive: false })
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
     window.addEventListener('keydown', onKey)
+    document.body.classList.add('dragging-piece')
 
     return () => {
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
       window.removeEventListener('keydown', onKey)
+      document.body.classList.remove('dragging-piece')
     }
   }, [Boolean(drag)])
 
   const dragShape = drag ? state.shapes[drag.index] : null
   const hoverCell =
     drag && dragShape
-      ? cellFromPointer(boardRef.current, metrics, dragShape, drag.x, drag.y)
+      ? cellFromPointer(
+          boardRef.current,
+          metrics,
+          dragShape,
+          drag.x,
+          drag.y,
+          drag.isTouch,
+        )
       : null
   const preview = buildPreview(state.board, dragShape, hoverCell)
   const canDrop =
@@ -373,6 +391,7 @@ export default function App() {
           cell={metrics.cell}
           gap={metrics.gap}
           valid={hoverCell ? canDrop : null}
+          isTouch={drag.isTouch}
         />
       )}
 
